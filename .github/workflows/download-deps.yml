@@ -1,27 +1,29 @@
 name: Offline Cargo Vendor
 
 on:
-  workflow_dispatch:  # 允许手动在网页上点击运行
+  workflow_dispatch:
 
 jobs:
   vendor:
-    runs-on: ubuntu-latest  # 使用 GitHub 的 Ubuntu 服务器
+    runs-on: ubuntu-latest
     
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
+      - name: 安装系统依赖 (OpenSSL 等)
+        # 这一步是关键，解决 Linux 下编译报错
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
       - name: 安装 Rust 工具链
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
       - name: 执行 Vendor (下载所有依赖)
-        # 这一步会读取你的 Cargo.toml，下载所有 Rust 依赖到 vendor 文件夹
         run: cargo vendor --versioned-dirs vendor
 
       - name: 压缩依赖包
-        # 将 vendor 文件夹打包成 tar.gz
         run: tar -czvf rust-vendor.tar.gz vendor
 
       - name: 上传制品 (供下载)
@@ -29,4 +31,3 @@ jobs:
         with:
           name: openwork-rust-deps
           path: rust-vendor.tar.gz
-          retention-days: 1
